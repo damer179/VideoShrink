@@ -1,0 +1,10 @@
+<<<<<<< HEAD
+ffmpeg-python==0.2.0
+tqdm==4.66.1
+Flask==2.3.3
+Werkzeug==2.3.7
+gunicorn==21.2.0
+=======
+ffmpeg-python==0.2.0
+tqdm==4.66.1
+>>>>>>> 4bd6a72ae7409e498141f16dbb52f32ee87f9a46
