@@ -6,10 +6,11 @@ import threading
 from mp4_compressor import compress_mp4_for_youtube
 import time
 
-app = Flask(__name__)
+app = Flask(__name__, static_folder='static')
 app.config['UPLOAD_FOLDER'] = 'uploads'
 app.config['OUTPUT_FOLDER'] = 'outputs'
 app.config['MAX_CONTENT_LENGTH'] = 500 * 1024 * 1024  # 500MB max file size
+app.config['SECRET_KEY'] = 'your-secret-key-here'
 
 # Create directories
 os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
@@ -24,49 +25,60 @@ def index():
 
 @app.route('/upload', methods=['POST'])
 def upload_file():
-    if 'video' not in request.files:
-        return jsonify({'error': 'No video file uploaded'}), 400
-    
-    file = request.files['video']
-    if file.filename == '':
-        return jsonify({'error': 'No file selected'}), 400
-    
-    if not file.filename.lower().endswith('.mp4'):
-        return jsonify({'error': 'Only MP4 files are supported'}), 400
-    
-    # Generate unique ID for this compression job
-    job_id = str(uuid.uuid4())
-    
-    # Save uploaded file
-    filename = secure_filename(file.filename)
-    input_path = os.path.join(app.config['UPLOAD_FOLDER'], f"{job_id}_{filename}")
-    file.save(input_path)
-    
-    # Get parameters
-    output_filename = request.form.get('output_filename', 'compressed_video.mp4')
-    if not output_filename.endswith('.mp4'):
-        output_filename += '.mp4'
-    
-    bitrate = request.form.get('bitrate', '2M')
-    
-    output_path = os.path.join(app.config['OUTPUT_FOLDER'], f"{job_id}_{output_filename}")
-    
-    # Initialize status
-    compression_status[job_id] = {
-        'status': 'processing',
-        'progress': 0,
-        'message': 'Starting compression...',
-        'input_file': filename,
-        'output_file': output_filename
-    }
-    
-    # Start compression in background
-    thread = threading.Thread(target=compress_video_background, 
-                            args=(job_id, input_path, output_path, bitrate))
-    thread.daemon = True
-    thread.start()
-    
-    return jsonify({'job_id': job_id})
+    try:
+        print(f"Upload request received. Files: {list(request.files.keys())}")
+        print(f"Form data: {dict(request.form)}")
+        
+        if 'video' not in request.files:
+            return jsonify({'error': 'No video file uploaded'}), 400
+        
+        file = request.files['video']
+        if file.filename == '':
+            return jsonify({'error': 'No file selected'}), 400
+        
+        if not file.filename.lower().endswith('.mp4'):
+            return jsonify({'error': 'Only MP4 files are supported'}), 400
+        
+        print(f"Processing file: {file.filename}")
+        
+        # Generate unique ID for this compression job
+        job_id = str(uuid.uuid4())
+        
+        # Save uploaded file
+        filename = secure_filename(file.filename)
+        input_path = os.path.join(app.config['UPLOAD_FOLDER'], f"{job_id}_{filename}")
+        file.save(input_path)
+        
+        # Get parameters
+        output_filename = request.form.get('output_filename', 'compressed_video.mp4')
+        if not output_filename.endswith('.mp4'):
+            output_filename += '.mp4'
+        
+        bitrate = request.form.get('bitrate', '2M')
+        
+        output_path = os.path.join(app.config['OUTPUT_FOLDER'], f"{job_id}_{output_filename}")
+        
+        # Initialize status
+        compression_status[job_id] = {
+            'status': 'processing',
+            'progress': 0,
+            'message': 'Starting compression...',
+            'input_file': filename,
+            'output_file': output_filename
+        }
+        
+        # Start compression in background
+        thread = threading.Thread(target=compress_video_background, 
+                                args=(job_id, input_path, output_path, bitrate))
+        thread.daemon = True
+        thread.start()
+        
+        print(f"Job created: {job_id}")
+        return jsonify({'job_id': job_id})
+        
+    except Exception as e:
+        print(f"Upload error: {e}")
+        return jsonify({'error': f'Upload failed: {str(e)}'}), 500
 
 def compress_video_background(job_id, input_path, output_path, bitrate):
     try:
@@ -106,13 +118,18 @@ def get_status(job_id):
     # Add file size info if completed
     if status['status'] == 'completed' and 'download_path' in status:
         try:
-            original_size = os.path.getsize(status['download_path'].replace('outputs', 'uploads').replace(job_id + '_', job_id + '_'))
-            compressed_size = os.path.getsize(status['download_path'])
-            status['original_size'] = f"{original_size / (1024*1024):.1f} MB"
-            status['compressed_size'] = f"{compressed_size / (1024*1024):.1f} MB"
-            status['reduction'] = f"{(1 - compressed_size/original_size) * 100:.1f}%"
-        except:
-            pass
+            # Find original file path
+            original_path = status['download_path'].replace('outputs', 'uploads')
+            original_path = original_path.replace(status['output_file'], status['input_file'])
+            
+            if os.path.exists(original_path) and os.path.exists(status['download_path']):
+                original_size = os.path.getsize(original_path)
+                compressed_size = os.path.getsize(status['download_path'])
+                status['original_size'] = f"{original_size / (1024*1024):.1f} MB"
+                status['compressed_size'] = f"{compressed_size / (1024*1024):.1f} MB"
+                status['reduction'] = f"{(1 - compressed_size/original_size) * 100:.1f}%"
+        except Exception as e:
+            print(f"Error calculating file sizes: {e}")
     
     return jsonify(status)
 
