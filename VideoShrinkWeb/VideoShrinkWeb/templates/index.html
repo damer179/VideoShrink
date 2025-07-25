@@ -24,26 +24,52 @@
         }
         
         .header {
-            background: #fff;
-            color: #1d1d1f;
-            padding: 60px 40px;
+            background: linear-gradient(150deg, #0a2540 15%, #1e3a5f 70%, #2d4f73 94%);
+            color: #fff;
+            padding: 120px 40px 100px;
             text-align: center;
-            border-bottom: 1px solid #d2d2d7;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .header::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 1000"><defs><radialGradient id="a" cx=".5" cy=".5" r=".5"><stop offset="0%" stop-color="%23635bff" stop-opacity=".3"/><stop offset="100%" stop-color="%23635bff" stop-opacity="0"/></radialGradient></defs><circle cx="200" cy="200" r="150" fill="url(%23a)"/><circle cx="800" cy="300" r="100" fill="url(%23a)"/><circle cx="400" cy="700" r="120" fill="url(%23a)"/></svg>') no-repeat;
+            background-size: 100% 100%;
+            animation: float 20s ease-in-out infinite;
+        }
+        
+        @keyframes float {
+            0%, 100% { transform: translateY(0px) rotate(0deg); }
+            33% { transform: translateY(-20px) rotate(1deg); }
+            66% { transform: translateY(10px) rotate(-1deg); }
         }
         
         .header h1 {
-            font-size: 56px;
+            font-size: 72px;
             font-weight: 600;
-            margin-bottom: 16px;
-            letter-spacing: -0.005em;
+            margin-bottom: 24px;
+            letter-spacing: -0.025em;
+            line-height: 1.1;
+            color: #fff;
+            position: relative;
+            z-index: 2;
         }
         
         .header p {
-            font-size: 28px;
+            font-size: 21px;
             font-weight: 400;
-            color: #86868b;
+            color: rgba(255, 255, 255, 0.8);
             max-width: 600px;
             margin: 0 auto;
+            line-height: 1.5;
+            position: relative;
+            z-index: 2;
         }
         
         .form-section {
@@ -381,15 +407,15 @@
             }
             
             .header {
-                padding: 40px 20px;
+                padding: 80px 20px 60px;
             }
             
             .header h1 {
-                font-size: 40px;
+                font-size: 48px;
             }
             
             .header p {
-                font-size: 21px;
+                font-size: 18px;
             }
             
             .form-section, .progress-section, .result-section {
