@@ -1,6 +1,10 @@
 # Outputs folder
 outputs/
 
+# Upload folder 
+uploads/
+
+
 # MP4 files
 *.mp4
 
