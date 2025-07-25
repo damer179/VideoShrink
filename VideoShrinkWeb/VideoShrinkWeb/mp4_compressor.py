@@ -104,6 +104,8 @@ def compress_mp4_for_youtube(input_file, output_file, target_bitrate="2M"):
                 # Use custom ffprobe path
                 if ffmpeg_path.endswith('.exe'):
                     ffprobe_path = ffmpeg_path.replace('ffmpeg.exe', 'ffprobe.exe')
+                elif ffmpeg_path == "/app/vendor/ffmpeg/ffmpeg":
+                    ffprobe_path = "/app/vendor/ffmpeg/ffprobe"
                 else:
                     ffprobe_path = ffmpeg_path.replace('ffmpeg', 'ffprobe')
                 probe = ffmpeg.probe(input_file, cmd=ffprobe_path)
