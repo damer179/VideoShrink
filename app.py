@@ -1,6 +1,5 @@
 from flask import Flask, render_template, request, jsonify, send_file
 from werkzeug.utils import secure_filename
-from werkzeug.middleware.gzip import GZipMiddleware
 import os
 import uuid
 import threading
@@ -8,7 +7,6 @@ from mp4_compressor import compress_mp4_for_youtube
 import time
 
 app = Flask(__name__, static_folder='static')
-app.wsgi_app = GZipMiddleware(app.wsgi_app)
 app.config['UPLOAD_FOLDER'] = 'uploads'
 app.config['OUTPUT_FOLDER'] = 'outputs'
 app.config['MAX_CONTENT_LENGTH'] = 500 * 1024 * 1024  # 500MB max file size
