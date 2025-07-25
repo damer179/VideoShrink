@@ -8,7 +8,7 @@ from tqdm import tqdm
 
 def find_ffmpeg():
     """Find FFmpeg executable path"""
-    # Check for ffmpeg using relative paths
+    # Check for ffmpeg using relative paths (local development)
     local_paths = [
         "ffmpeg.exe",
         "ffmpeg/ffmpeg.exe",
@@ -19,6 +19,11 @@ def find_ffmpeg():
     for path in local_paths:
         if os.path.exists(path):
             return path
+    
+    # Check Heroku buildpack path
+    heroku_ffmpeg = "/app/vendor/ffmpeg/ffmpeg"
+    if os.path.exists(heroku_ffmpeg):
+        return heroku_ffmpeg
     
     # Then try system PATH
     if shutil.which("ffmpeg"):
