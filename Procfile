@@ -1,1 +1,1 @@
-web: gunicorn app:app
+web: gunicorn app:app --workers=1 --threads=4 --timeout=300 --keep-alive=2 --max-requests=1000 --preload

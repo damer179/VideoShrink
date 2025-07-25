@@ -1,5 +1,6 @@
 from flask import Flask, render_template, request, jsonify, send_file
 from werkzeug.utils import secure_filename
+from werkzeug.middleware.gzip import GZipMiddleware
 import os
 import uuid
 import threading
@@ -7,10 +8,12 @@ from mp4_compressor import compress_mp4_for_youtube
 import time
 
 app = Flask(__name__, static_folder='static')
+app.wsgi_app = GZipMiddleware(app.wsgi_app)
 app.config['UPLOAD_FOLDER'] = 'uploads'
 app.config['OUTPUT_FOLDER'] = 'outputs'
 app.config['MAX_CONTENT_LENGTH'] = 500 * 1024 * 1024  # 500MB max file size
 app.config['SECRET_KEY'] = 'your-secret-key-here'
+app.config['SEND_FILE_MAX_AGE_DEFAULT'] = 31536000  # 1 year cache for static files
 
 # Create directories
 os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
@@ -21,7 +24,9 @@ compression_status = {}
 
 @app.route('/')
 def index():
-    return render_template('index.html')
+    response = app.make_response(render_template('index.html'))
+    response.headers['Cache-Control'] = 'public, max-age=300'  # 5 minutes
+    return response
 
 <<<<<<< HEAD
 =======
