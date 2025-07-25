@@ -8,23 +8,6 @@ from tqdm import tqdm
 
 def find_ffmpeg():
     """Find FFmpeg executable path"""
-<<<<<<< HEAD
-    # Check common installation paths
-    common_paths = [
-        r"C:\Users\rongg\Code\ffmpeg\ffmpeg.exe",
-        r"C:\Users\rongg\Code\ffmpeg\bin\ffmpeg.exe",
-        r"C:\ffmpeg\bin\ffmpeg.exe",
-        r"C:\Program Files\ffmpeg\bin\ffmpeg.exe",
-        r"C:\Program Files (x86)\ffmpeg\bin\ffmpeg.exe"
-    ]
-    
-    # First try system PATH
-    if shutil.which("ffmpeg"):
-        return "ffmpeg"
-    
-    # Then try common paths
-    for path in common_paths:
-=======
     # Check Heroku buildpack path first (production)
     heroku_ffmpeg = "/app/vendor/ffmpeg/ffmpeg"
     if os.path.exists(heroku_ffmpeg):
@@ -43,7 +26,6 @@ def find_ffmpeg():
     
     # Try relative paths last
     for path in local_paths:
->>>>>>> d9f1670d0415212d9d51b8e0c7286fcd69e8365f
         if os.path.exists(path):
             return path
     
@@ -118,16 +100,16 @@ def compress_mp4_for_youtube(input_file, output_file, target_bitrate="2M"):
         
         # Get input file info
         try:
-            if ffmpeg_path != "ffmpeg":
-                # Use custom ffprobe path
-<<<<<<< HEAD
-                ffprobe_path = ffmpeg_path.replace('ffmpeg.exe', 'ffprobe.exe')
-=======
+            # Always use system PATH for ffprobe on Heroku
+            if ffmpeg_path == "/app/vendor/ffmpeg/ffmpeg":
+                # On Heroku, use system PATH for both ffmpeg and ffprobe
+                probe = ffmpeg.probe(input_file)
+            elif ffmpeg_path != "ffmpeg":
+                # Use custom ffprobe path for local development
                 if ffmpeg_path.endswith('.exe'):
                     ffprobe_path = ffmpeg_path.replace('ffmpeg.exe', 'ffprobe.exe')
                 else:
                     ffprobe_path = ffmpeg_path.replace('ffmpeg', 'ffprobe')
->>>>>>> d9f1670d0415212d9d51b8e0c7286fcd69e8365f
                 probe = ffmpeg.probe(input_file, cmd=ffprobe_path)
             else:
                 probe = ffmpeg.probe(input_file)
@@ -189,7 +171,10 @@ def compress_mp4_for_youtube(input_file, output_file, target_bitrate="2M"):
         pbar = tqdm(total=100, desc="Progress", unit="%", ncols=70)
         
         try:
-            if ffmpeg_path != "ffmpeg":
+            # On Heroku, use system PATH; locally use custom path
+            if ffmpeg_path == "/app/vendor/ffmpeg/ffmpeg":
+                ffmpeg.run(output, overwrite_output=True, quiet=True)
+            elif ffmpeg_path != "ffmpeg":
                 ffmpeg.run(output, overwrite_output=True, quiet=True, cmd=ffmpeg_path)
             else:
                 ffmpeg.run(output, overwrite_output=True, quiet=True)
