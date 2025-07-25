@@ -110,15 +110,16 @@ def compress_video_background(job_id, input_path, output_path, bitrate):
         try:
             probe = ffmpeg.probe(input_path)
             video_info = next(s for s in probe['streams'] if s['codec_type'] == 'video')
-            duration = float(probe['format']['duration'])
+            duration = float(probe['format'].get('duration', 0))
             compression_status[job_id]['duration'] = duration
             compression_status[job_id]['video_info'] = {
-                'width': video_info['width'],
-                'height': video_info['height'],
-                'fps': eval(video_info.get('r_frame_rate', '30/1'))
+                'width': int(video_info.get('width', 0)),
+                'height': int(video_info.get('height', 0)),
+                'fps': 30  # Default FPS
             }
         except Exception as e:
             duration = 0
+            compression_status[job_id]['video_info'] = {'width': 0, 'height': 0, 'fps': 30}
         
         compression_status[job_id]['progress'] = 10
         compression_status[job_id]['message'] = f'Starting compression... ({duration:.1f}s video)'
@@ -171,24 +172,32 @@ def compress_with_realtime_progress(job_id, input_path, output_path, bitrate):
     
     current_time = 0
     for line in process.stdout:
-        if line.startswith('out_time_ms='):
-            time_ms = int(line.split('=')[1])
-            current_time = time_ms / 1000000  # Convert to seconds
+        try:
+            if line.startswith('out_time_ms='):
+                time_str = line.split('=')[1].strip()
+                if time_str and time_str != 'N/A':
+                    time_ms = int(time_str)
+                    current_time = time_ms / 1000000  # Convert to seconds
+                    
+                    if duration > 0:
+                        progress = min(int((current_time / duration) * 80) + 10, 95)  # 10-95%
+                        compression_status[job_id]['progress'] = progress
+                        compression_status[job_id]['message'] = f'Encoding... {current_time:.1f}s / {duration:.1f}s'
             
-            if duration > 0:
-                progress = min(int((current_time / duration) * 80) + 10, 95)  # 10-95%
-                compression_status[job_id]['progress'] = progress
-                compression_status[job_id]['message'] = f'Encoding... {current_time:.1f}s / {duration:.1f}s'
-        
-        elif line.startswith('speed='):
-            speed = line.split('=')[1].strip()
-            if 'x' in speed:
-                compression_status[job_id]['speed'] = speed
+            elif line.startswith('speed='):
+                speed = line.split('=')[1].strip()
+                if 'x' in speed and speed != 'N/A':
+                    compression_status[job_id]['speed'] = speed
+        except (ValueError, IndexError):
+            continue  # Skip invalid lines
     
     process.wait()
     
     if process.returncode != 0:
-        error = process.stderr.read()
+        try:
+            error = process.stderr.read()
+        except:
+            error = "Unknown FFmpeg error"
         raise Exception(f"FFmpeg error: {error}")
     
     compression_status[job_id]['progress'] = 95
