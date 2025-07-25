@@ -8,23 +8,21 @@ from tqdm import tqdm
 
 def find_ffmpeg():
     """Find FFmpeg executable path"""
-    # Check common installation paths
-    common_paths = [
-        r"C:\Users\rongg\Code\ffmpeg\ffmpeg.exe",
-        r"C:\Users\rongg\Code\ffmpeg\bin\ffmpeg.exe",
-        r"C:\ffmpeg\bin\ffmpeg.exe",
-        r"C:\Program Files\ffmpeg\bin\ffmpeg.exe",
-        r"C:\Program Files (x86)\ffmpeg\bin\ffmpeg.exe"
+    # Check for ffmpeg using relative paths
+    local_paths = [
+        "ffmpeg.exe",
+        "ffmpeg/ffmpeg.exe",
+        "ffmpeg/bin/ffmpeg.exe"
     ]
     
-    # First try system PATH
-    if shutil.which("ffmpeg"):
-        return "ffmpeg"
-    
-    # Then try common paths
-    for path in common_paths:
+    # First try relative paths
+    for path in local_paths:
         if os.path.exists(path):
             return path
+    
+    # Then try system PATH
+    if shutil.which("ffmpeg"):
+        return "ffmpeg"
     
     return None
 
