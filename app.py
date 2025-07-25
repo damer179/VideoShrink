@@ -28,15 +28,11 @@ def index():
     response.headers['Cache-Control'] = 'public, max-age=300'  # 5 minutes
     return response
 
-<<<<<<< HEAD
-=======
 @app.route('/debug')
 def debug():
     from mp4_compressor import find_ffmpeg
     ffmpeg_path = find_ffmpeg()
     return f"FFmpeg path: {ffmpeg_path}"
-
->>>>>>> d9f1670d0415212d9d51b8e0c7286fcd69e8365f
 @app.route('/upload', methods=['POST'])
 def upload_file():
     try:
