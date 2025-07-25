@@ -66,13 +66,18 @@ def upload_file():
         
         output_path = os.path.join(app.config['OUTPUT_FOLDER'], f"{job_id}_{output_filename}")
         
+        # Get file size for initial info
+        file_size_mb = os.path.getsize(input_path) / (1024 * 1024)
+        
         # Initialize status
         compression_status[job_id] = {
             'status': 'processing',
             'progress': 0,
-            'message': 'Starting compression...',
+            'message': 'Initializing...',
             'input_file': filename,
-            'output_file': output_filename
+            'output_file': output_filename,
+            'file_size': f'{file_size_mb:.1f} MB',
+            'start_time': time.time()
         }
         
         # Start compression in background
@@ -90,11 +95,36 @@ def upload_file():
 
 def compress_video_background(job_id, input_path, output_path, bitrate):
     try:
-        compression_status[job_id]['message'] = 'Compressing video...'
-        compression_status[job_id]['progress'] = 10
+        compression_status[job_id]['message'] = 'Preparing video...'
+        compression_status[job_id]['progress'] = 5
         
-        # Custom compression function that updates status
-        compress_with_status(job_id, input_path, output_path, bitrate)
+        # Get video info first
+        import ffmpeg
+        from mp4_compressor import find_ffmpeg
+        
+        ffmpeg_path = find_ffmpeg()
+        if not ffmpeg_path:
+            raise Exception("FFmpeg not found")
+        
+        # Get video duration for progress calculation
+        try:
+            probe = ffmpeg.probe(input_path)
+            video_info = next(s for s in probe['streams'] if s['codec_type'] == 'video')
+            duration = float(probe['format']['duration'])
+            compression_status[job_id]['duration'] = duration
+            compression_status[job_id]['video_info'] = {
+                'width': video_info['width'],
+                'height': video_info['height'],
+                'fps': eval(video_info.get('r_frame_rate', '30/1'))
+            }
+        except Exception as e:
+            duration = 0
+        
+        compression_status[job_id]['progress'] = 10
+        compression_status[job_id]['message'] = f'Starting compression... ({duration:.1f}s video)'
+        
+        # Start compression with real-time progress
+        compress_with_realtime_progress(job_id, input_path, output_path, bitrate)
         
         compression_status[job_id]['status'] = 'completed'
         compression_status[job_id]['progress'] = 100
@@ -105,15 +135,63 @@ def compress_video_background(job_id, input_path, output_path, bitrate):
         compression_status[job_id]['status'] = 'error'
         compression_status[job_id]['message'] = f'Error: {str(e)}'
 
-def compress_with_status(job_id, input_path, output_path, bitrate):
-    # Simplified version of compression with status updates
-    compression_status[job_id]['progress'] = 30
-    compression_status[job_id]['message'] = 'Analyzing video...'
+def compress_with_realtime_progress(job_id, input_path, output_path, bitrate):
+    import subprocess
+    import re
+    from mp4_compressor import find_ffmpeg
     
-    # Call the original compression function
-    compress_mp4_for_youtube(input_path, output_path, bitrate)
+    ffmpeg_path = find_ffmpeg()
+    duration = compression_status[job_id].get('duration', 0)
     
-    compression_status[job_id]['progress'] = 90
+    # Optimized FFmpeg command for faster processing
+    cmd = [
+        ffmpeg_path,
+        '-i', input_path,
+        '-c:v', 'libx264',
+        '-preset', 'fast',  # Faster preset
+        '-crf', '23',
+        '-maxrate', bitrate,
+        '-bufsize', f"{int(bitrate[:-1]) * 2}M",
+        '-pix_fmt', 'yuv420p',
+        '-c:a', 'aac',
+        '-b:a', '128k',
+        '-ac', '2',
+        '-ar', '44100',
+        '-movflags', 'faststart',
+        '-threads', '0',  # Use all available CPU cores
+        '-progress', 'pipe:1',  # Output progress to stdout
+        '-y',  # Overwrite output file
+        output_path
+    ]
+    
+    compression_status[job_id]['message'] = 'Encoding video...'
+    
+    process = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, 
+                              universal_newlines=True, bufsize=1)
+    
+    current_time = 0
+    for line in process.stdout:
+        if line.startswith('out_time_ms='):
+            time_ms = int(line.split('=')[1])
+            current_time = time_ms / 1000000  # Convert to seconds
+            
+            if duration > 0:
+                progress = min(int((current_time / duration) * 80) + 10, 95)  # 10-95%
+                compression_status[job_id]['progress'] = progress
+                compression_status[job_id]['message'] = f'Encoding... {current_time:.1f}s / {duration:.1f}s'
+        
+        elif line.startswith('speed='):
+            speed = line.split('=')[1].strip()
+            if 'x' in speed:
+                compression_status[job_id]['speed'] = speed
+    
+    process.wait()
+    
+    if process.returncode != 0:
+        error = process.stderr.read()
+        raise Exception(f"FFmpeg error: {error}")
+    
+    compression_status[job_id]['progress'] = 95
     compression_status[job_id]['message'] = 'Finalizing...'
 
 @app.route('/status/<job_id>')
@@ -122,6 +200,27 @@ def get_status(job_id):
         return jsonify({'error': 'Job not found'}), 404
     
     status = compression_status[job_id].copy()
+    
+    # Add elapsed time
+    if 'start_time' in status:
+        elapsed = time.time() - status['start_time']
+        status['elapsed_time'] = f'{int(elapsed//60)}m {int(elapsed%60)}s' if elapsed >= 60 else f'{int(elapsed)}s'
+    
+    # Add estimated time remaining
+    if status.get('progress', 0) > 10 and 'start_time' in status:
+        elapsed = time.time() - status['start_time']
+        progress_ratio = status['progress'] / 100
+        if progress_ratio > 0:
+            total_estimated = elapsed / progress_ratio
+            remaining = max(0, total_estimated - elapsed)
+            status['eta'] = f'{int(remaining//60)}m {int(remaining%60)}s' if remaining >= 60 else f'{int(remaining)}s'
+    
+    # Add current output file size during processing
+    if status['status'] == 'processing' and 'download_path' in compression_status[job_id]:
+        output_path = compression_status[job_id]['download_path']
+        if os.path.exists(output_path):
+            current_size = os.path.getsize(output_path) / (1024 * 1024)
+            status['current_size'] = f'{current_size:.1f} MB'
     
     # Add file size info if completed
     if status['status'] == 'completed' and 'download_path' in status:

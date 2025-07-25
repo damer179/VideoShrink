@@ -737,7 +737,9 @@
                         alert('Error: ' + data.message);
                         resetForm();
                     } else {
-                        setTimeout(pollStatus, 1000);
+                        // Poll more frequently during active compression
+                        const pollInterval = data.progress > 10 && data.progress < 95 ? 500 : 1000;
+                        setTimeout(pollStatus, pollInterval);
                     }
                 })
                 .catch(error => {
@@ -750,6 +752,27 @@
             document.getElementById('progressFill').style.width = data.progress + '%';
             document.getElementById('progressMessage').textContent = data.message;
             document.getElementById('progressPercent').textContent = data.progress + '%';
+            
+            // Add detailed progress info
+            let detailsHtml = '';
+            if (data.file_size) detailsHtml += `File Size: ${data.file_size}<br>`;
+            if (data.elapsed_time) detailsHtml += `Elapsed: ${data.elapsed_time}<br>`;
+            if (data.eta) detailsHtml += `ETA: ${data.eta}<br>`;
+            if (data.speed) detailsHtml += `Speed: ${data.speed}<br>`;
+            if (data.current_size) detailsHtml += `Current: ${data.current_size}<br>`;
+            if (data.video_info) {
+                detailsHtml += `Resolution: ${data.video_info.width}x${data.video_info.height}<br>`;
+            }
+            
+            // Update or create details element
+            let detailsElement = document.getElementById('progressDetails');
+            if (!detailsElement) {
+                detailsElement = document.createElement('div');
+                detailsElement.id = 'progressDetails';
+                detailsElement.style.cssText = 'font-size: 14px; color: #86868b; margin-top: 16px; line-height: 1.4;';
+                document.getElementById('progressSection').appendChild(detailsElement);
+            }
+            detailsElement.innerHTML = detailsHtml;
         }
         
         function showResults(data) {
