@@ -88,6 +88,9 @@ def upload_file():
 
 def compress_video_background(job_id, input_path, output_path, bitrate):
     try:
+        print(f"Starting compression for job {job_id}")
+        print(f"Input: {input_path}, Output: {output_path}, Bitrate: {bitrate}")
+        
         compression_status[job_id]['message'] = 'Compressing video...'
         compression_status[job_id]['progress'] = 10
         
@@ -99,7 +102,10 @@ def compress_video_background(job_id, input_path, output_path, bitrate):
         compression_status[job_id]['message'] = 'Compression completed!'
         compression_status[job_id]['download_path'] = output_path
         
+        print(f"Compression completed for job {job_id}")
+        
     except Exception as e:
+        print(f"Compression failed for job {job_id}: {str(e)}")
         compression_status[job_id]['status'] = 'error'
         compression_status[job_id]['message'] = f'Error: {str(e)}'
 
@@ -108,8 +114,12 @@ def compress_with_status(job_id, input_path, output_path, bitrate):
     compression_status[job_id]['progress'] = 30
     compression_status[job_id]['message'] = 'Analyzing video...'
     
+    print(f"About to call compress_mp4_for_youtube for job {job_id}")
+    
     # Call the original compression function
     compress_mp4_for_youtube(input_path, output_path, bitrate)
+    
+    print(f"compress_mp4_for_youtube completed for job {job_id}")
     
     compression_status[job_id]['progress'] = 90
     compression_status[job_id]['message'] = 'Finalizing...'
