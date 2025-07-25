@@ -1,139 +1,131 @@
-# MP4 Compressor for YouTube
+# VideoShrink - Free MP4 Compressor for YouTube
 
-A Python script that compresses MP4 files for YouTube upload while maintaining high audio quality and optimal video compression. Features real-time progress monitoring and visual feedback.
+A web-based MP4 video compressor optimized for YouTube uploads. Compress your videos while maintaining high quality with an intuitive drag-and-drop interface.
 
-## Installation
-
-1. Install Python 3.6 or higher
-2. Install FFmpeg on your system:
-   - **Windows**: Download from https://ffmpeg.org/download.html
-   - **macOS**: `brew install ffmpeg`
-   - **Linux**: `sudo apt install ffmpeg`
-3. Install Python dependencies:
-   ```bash
-   pip install -r requirements.txt
-   ```
-
-## Basic Usage
-
-```bash
-python mp4_compressor.py input_file.mp4 output_file.mp4
-```
-
-## Examples
-
-### Example 1: Basic Compression
-```bash
-python mp4_compressor.py vacation_video.mp4 vacation_compressed.mp4
-```
-Output:
-```
-Compressing vacation_video.mp4...
-Settings: 1920x1080, Bitrate: 2M, CRF: 23
-
-Compressing...
-Progress: 100%|████████████████████| 100/100 [00:45<00:00,  2.22%/s]
-Current: 89.3MB | Reduction: 64.3%
-
-==================================================
-           COMPRESSION COMPLETE
-==================================================
-📁 Input:  vacation_video.mp4
-📁 Output: vacation_compressed.mp4
-📐 Resolution: 1920x1080
-⚙️  Settings: Bitrate=2M, CRF=23
---------------------------------------------------
-📊 Original:     250.45 MB
-📊 Compressed:    89.32 MB
-📈 Reduction:     64.3%
-📊 Progress:   [███████████████████░░░░░░░░░░░] 64.3%
-==================================================
-```
-
-### Example 2: Multiple Files
-```bash
-# Compress multiple videos
-python mp4_compressor.py raw_footage_1.mp4 youtube_ready_1.mp4
-python mp4_compressor.py raw_footage_2.mp4 youtube_ready_2.mp4
-python mp4_compressor.py raw_footage_3.mp4 youtube_ready_3.mp4
-```
-
-### Example 3: Custom Bitrate
-Modify the script to use custom bitrate:
-```python
-compress_mp4_for_youtube("input.mp4", "output.mp4", target_bitrate="1.5M")
-```
-
-### Example 4: Batch Processing Script
-```python
-import os
-from mp4_compressor import compress_mp4_for_youtube
-
-input_folder = "raw_videos"
-output_folder = "compressed_videos"
-
-for filename in os.listdir(input_folder):
-    if filename.endswith(".mp4"):
-        input_path = os.path.join(input_folder, filename)
-        output_path = os.path.join(output_folder, f"compressed_{filename}")
-        compress_mp4_for_youtube(input_path, output_path)
-```
-
-## Compression Settings by Resolution
-
-| Resolution | Bitrate | CRF | Typical Size Reduction |
-|------------|---------|-----|----------------------|
-| 1080p+     | 2M      | 23  | 50-70%              |
-| 720p       | 1.5M    | 24  | 45-65%              |
-| 480p       | 1M      | 25  | 40-60%              |
+🌐 **Live Site:** [videoshrink.com](https://videoshrink.com)
 
 ## Features
 
-- **Real-time Progress**: Visual progress bar during compression
-- **Live Monitoring**: Shows current file size and reduction percentage
-- **Visual Summary**: Detailed compression results with emojis and charts
-- **Auto-Detection**: Automatically adjusts settings based on video resolution
-- **Error Handling**: Clear error messages and troubleshooting guidance
+- **Web-based Interface**: No software installation required
+- **Drag & Drop Upload**: Easy file selection with visual feedback
+- **Real-time Progress**: Live compression progress monitoring
+- **YouTube Optimized**: H.264 codec with optimal settings
+- **High Audio Quality**: AAC encoding at 128k bitrate
+- **Multiple Bitrate Options**: 1M, 1.5M, 2M, 3M bitrates available
+- **Responsive Design**: Works on desktop, tablet, and mobile
+- **Secure Processing**: Files automatically deleted after download
 
-## Audio Quality Settings
+## Tech Stack
 
-- **Codec**: AAC (YouTube preferred)
-- **Bitrate**: 128k (high quality)
-- **Sample Rate**: 44.1kHz
-- **Channels**: Stereo
+- **Backend**: Python Flask
+- **Video Processing**: FFmpeg
+- **Frontend**: HTML5, CSS3, JavaScript
+- **Deployment**: Heroku
+- **Domain**: Squarespace DNS
 
-## Troubleshooting
+## Local Development
 
-**Error: FFmpeg not found**
-```
-Solution: Install FFmpeg and add to system PATH
-```
+### Prerequisites
+1. Python 3.6+
+2. FFmpeg installed on system
+3. Git
 
-**Error: Input file not found**
+### Installation
 ```bash
-# Check file path
-python mp4_compressor.py "C:\Videos\my video.mp4" output.mp4
+git clone https://github.com/yourusername/videoshrink.git
+cd videoshrink
+pip install -r requirements.txt
 ```
 
-**Large file still too big**
-```python
-# Use lower bitrate
-compress_mp4_for_youtube("input.mp4", "output.mp4", target_bitrate="1M")
+### Run Locally
+```bash
+python app.py
+```
+Visit `http://localhost:5000`
+
+### Environment Variables
+```bash
+PORT=5000
+FLASK_ENV=development
 ```
 
-## File Size Examples
+## Project Structure
 
-| Original | Compressed | Reduction |
-|----------|------------|-----------|
-| 500 MB   | 175 MB     | 65%       |
-| 1.2 GB   | 420 MB     | 65%       |
-| 250 MB   | 95 MB      | 62%       |
+```
+videoshrink/
+├── app.py                 # Flask web application
+├── mp4_compressor.py      # Core compression logic
+├── requirements.txt       # Python dependencies
+├── templates/
+│   └── index.html        # Main web interface
+├── static/               # CSS, JS, images
+├── uploads/              # Temporary upload storage
+├── outputs/              # Compressed video storage
+└── README.md
+```
 
-## YouTube Upload Guidelines
+## API Endpoints
 
-The compressed files will meet YouTube's requirements:
-- ✅ H.264 video codec
-- ✅ AAC audio codec
-- ✅ MP4 container
-- ✅ yuv420p pixel format
-- ✅ Optimized for streaming
+- `GET /` - Main web interface
+- `POST /upload` - Upload and start compression
+- `GET /status/<job_id>` - Check compression progress
+- `GET /download/<job_id>` - Download compressed video
+- `GET /debug` - FFmpeg path debugging
+
+## Compression Settings
+
+| Bitrate Option | Resolution | Typical Reduction |
+|----------------|------------|-------------------|
+| 1M             | 480p       | 40-60%           |
+| 1.5M           | 720p       | 45-65%           |
+| 2M (default)   | 1080p      | 50-70%           |
+| 3M             | 1080p+     | 45-65%           |
+
+## Deployment
+
+### Heroku Deployment
+```bash
+heroku create your-app-name
+heroku buildpacks:add --index 1 https://github.com/jonathanong/heroku-buildpack-ffmpeg-latest.git
+heroku buildpacks:add --index 2 heroku/python
+git push heroku main
+```
+
+### Custom Domain Setup
+```bash
+heroku domains:add yourdomain.com
+heroku domains:add www.yourdomain.com
+heroku certs:auto:enable
+```
+
+## File Size Limits
+
+- **Maximum Upload**: 500MB
+- **Supported Format**: MP4 only
+- **Processing Time**: ~1-3 minutes per 100MB
+
+## Browser Support
+
+- ✅ Chrome 60+
+- ✅ Firefox 55+
+- ✅ Safari 12+
+- ✅ Edge 79+
+
+## Contributing
+
+1. Fork the repository
+2. Create feature branch (`git checkout -b feature/amazing-feature`)
+3. Commit changes (`git commit -m 'Add amazing feature'`)
+4. Push to branch (`git push origin feature/amazing-feature`)
+5. Open Pull Request
+
+## License
+
+MIT License - see LICENSE file for details
+
+## Support
+
+For issues or questions:
+- 📧 Email: support@videoshrink.com
+- 🐛 Issues: GitHub Issues page
+- 📖 Docs: This README
