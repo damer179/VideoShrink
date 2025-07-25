@@ -23,6 +23,12 @@ compression_status = {}
 def index():
     return render_template('index.html')
 
+@app.route('/debug')
+def debug():
+    from mp4_compressor import find_ffmpeg
+    ffmpeg_path = find_ffmpeg()
+    return f"FFmpeg path: {ffmpeg_path}"
+
 @app.route('/upload', methods=['POST'])
 def upload_file():
     try:
