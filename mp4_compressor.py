@@ -8,19 +8,7 @@ from tqdm import tqdm
 
 def find_ffmpeg():
     """Find FFmpeg executable path"""
-    # Check for ffmpeg using relative paths (local development)
-    local_paths = [
-        "ffmpeg.exe",
-        "ffmpeg/ffmpeg.exe",
-        "ffmpeg/bin/ffmpeg.exe"
-    ]
-    
-    # First try relative paths
-    for path in local_paths:
-        if os.path.exists(path):
-            return path
-    
-    # Check Heroku buildpack path
+    # Check Heroku buildpack path first (production)
     heroku_ffmpeg = "/app/vendor/ffmpeg/ffmpeg"
     if os.path.exists(heroku_ffmpeg):
         return heroku_ffmpeg
@@ -28,6 +16,18 @@ def find_ffmpeg():
     # Then try system PATH
     if shutil.which("ffmpeg"):
         return "ffmpeg"
+    
+    # Check for ffmpeg using relative paths (local development)
+    local_paths = [
+        "ffmpeg.exe",
+        "ffmpeg/ffmpeg.exe",
+        "ffmpeg/bin/ffmpeg.exe"
+    ]
+    
+    # Try relative paths last
+    for path in local_paths:
+        if os.path.exists(path):
+            return path
     
     return None
 
@@ -102,7 +102,10 @@ def compress_mp4_for_youtube(input_file, output_file, target_bitrate="2M"):
         try:
             if ffmpeg_path != "ffmpeg":
                 # Use custom ffprobe path
-                ffprobe_path = ffmpeg_path.replace('ffmpeg.exe', 'ffprobe.exe')
+                if ffmpeg_path.endswith('.exe'):
+                    ffprobe_path = ffmpeg_path.replace('ffmpeg.exe', 'ffprobe.exe')
+                else:
+                    ffprobe_path = ffmpeg_path.replace('ffmpeg', 'ffprobe')
                 probe = ffmpeg.probe(input_file, cmd=ffprobe_path)
             else:
                 probe = ffmpeg.probe(input_file)
