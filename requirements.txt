@@ -2,10 +2,4 @@ ffmpeg-python==0.2.0
 tqdm==4.66.1
 Flask==2.3.3
 Werkzeug==2.3.7
-<<<<<<< HEAD
 gunicorn==21.2.0
-ffmpeg-python==0.2.0
-tqdm==4.66.1
-=======
-gunicorn==21.2.0
->>>>>>> d9f1670d0415212d9d51b8e0c7286fcd69e8365f
