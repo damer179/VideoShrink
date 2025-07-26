@@ -20,6 +20,30 @@ os.makedirs(app.config['OUTPUT_FOLDER'], exist_ok=True)
 # Store compression status
 compression_status = {}
 
+def cleanup_old_files():
+    """Remove files older than 1 hour"""
+    import glob
+    current_time = time.time()
+    
+    for folder in [app.config['UPLOAD_FOLDER'], app.config['OUTPUT_FOLDER']]:
+        for file_path in glob.glob(os.path.join(folder, '*')):
+            try:
+                if os.path.isfile(file_path):
+                    file_age = current_time - os.path.getmtime(file_path)
+                    if file_age > 3600:  # 1 hour
+                        os.remove(file_path)
+                        print(f"Cleaned up old file: {file_path}")
+            except Exception as e:
+                print(f"Error cleaning up {file_path}: {e}")
+
+# Run cleanup every hour
+import threading
+def periodic_cleanup():
+    cleanup_old_files()
+    threading.Timer(3600, periodic_cleanup).start()  # Run every hour
+
+periodic_cleanup()  # Start cleanup timer
+
 @app.route('/')
 def index():
     response = app.make_response(render_template('index.html'))
@@ -135,6 +159,15 @@ def compress_video_background(job_id, input_path, output_path, bitrate):
     except Exception as e:
         compression_status[job_id]['status'] = 'error'
         compression_status[job_id]['message'] = f'Error: {str(e)}'
+        
+        # Cleanup files on error
+        try:
+            if os.path.exists(input_path):
+                os.remove(input_path)
+            if os.path.exists(output_path):
+                os.remove(output_path)
+        except Exception as cleanup_error:
+            print(f"Cleanup error for failed job {job_id}: {cleanup_error}")
 
 def compress_with_realtime_progress(job_id, input_path, output_path, bitrate):
     import subprocess
@@ -258,8 +291,33 @@ def download_file(job_id):
     if not os.path.exists(file_path):
         return jsonify({'error': 'File not found'}), 404
     
-    return send_file(file_path, as_attachment=True, 
-                    download_name=compression_status[job_id]['output_file'])
+    # Get input file path for cleanup
+    input_file = compression_status[job_id]['input_file']
+    input_path = file_path.replace('outputs', 'uploads').replace(compression_status[job_id]['output_file'], input_file)
+    
+    try:
+        # Send file to user
+        response = send_file(file_path, as_attachment=True, 
+                           download_name=compression_status[job_id]['output_file'])
+        
+        # Schedule cleanup after response is sent
+        @response.call_on_close
+        def cleanup_files():
+            try:
+                if os.path.exists(file_path):
+                    os.remove(file_path)
+                if os.path.exists(input_path):
+                    os.remove(input_path)
+                # Remove job from status tracking
+                if job_id in compression_status:
+                    del compression_status[job_id]
+            except Exception as e:
+                print(f"Cleanup error for job {job_id}: {e}")
+        
+        return response
+        
+    except Exception as e:
+        return jsonify({'error': f'Download failed: {str(e)}'}), 500
 
 if __name__ == '__main__':
     port = int(os.environ.get('PORT', 5000))
