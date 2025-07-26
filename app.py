@@ -11,7 +11,7 @@ app.config['UPLOAD_FOLDER'] = 'uploads'
 app.config['OUTPUT_FOLDER'] = 'outputs'
 app.config['MAX_CONTENT_LENGTH'] = 500 * 1024 * 1024  # 500MB max file size
 app.config['SECRET_KEY'] = 'your-secret-key-here'
-app.config['SEND_FILE_MAX_AGE_DEFAULT'] = 31536000  # 1 year cache for static files
+app.config['SEND_FILE_MAX_AGE_DEFAULT'] = 0  # Disable caching for large files
 
 # Create directories
 os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
@@ -120,7 +120,7 @@ def upload_file():
 def compress_video_background(job_id, input_path, output_path, bitrate):
     try:
         compression_status[job_id]['message'] = 'Preparing video...'
-        compression_status[job_id]['progress'] = 5
+        compression_status[job_id]['progress'] = 8
         
         # Get video info first
         import ffmpeg
@@ -130,23 +130,21 @@ def compress_video_background(job_id, input_path, output_path, bitrate):
         if not ffmpeg_path:
             raise Exception("FFmpeg not found")
         
-        # Get video duration for progress calculation
+        # Fast estimation - skip slow video probing
         try:
-            probe = ffmpeg.probe(input_path)
-            video_info = next(s for s in probe['streams'] if s['codec_type'] == 'video')
-            duration = float(probe['format'].get('duration', 0))
-            compression_status[job_id]['duration'] = duration
+            file_size_mb = os.path.getsize(input_path) / (1024 * 1024)
+            estimated_duration = file_size_mb / 2  # Rough estimate: 2MB per second
+            
+            compression_status[job_id]['duration'] = estimated_duration
             compression_status[job_id]['video_info'] = {
-                'width': int(video_info.get('width', 0)),
-                'height': int(video_info.get('height', 0)),
-                'fps': 30  # Default FPS
+                'width': 1920, 'height': 1080, 'fps': 30  # Use defaults
             }
-        except Exception as e:
-            duration = 0
-            compression_status[job_id]['video_info'] = {'width': 0, 'height': 0, 'fps': 30}
+        except:
+            compression_status[job_id]['duration'] = 0
+            compression_status[job_id]['video_info'] = {'width': 1920, 'height': 1080, 'fps': 30}
         
-        compression_status[job_id]['progress'] = 10
-        compression_status[job_id]['message'] = f'Starting compression... ({duration:.1f}s video)'
+        compression_status[job_id]['progress'] = 15
+        compression_status[job_id]['message'] = 'Starting compression...'
         
         # Start compression with real-time progress
         compress_with_realtime_progress(job_id, input_path, output_path, bitrate)
@@ -182,7 +180,7 @@ def compress_with_realtime_progress(job_id, input_path, output_path, bitrate):
         ffmpeg_path,
         '-i', input_path,
         '-c:v', 'libx264',
-        '-preset', 'fast',  # Faster preset
+        '-preset', 'veryfast',  # Even faster preset
         '-crf', '23',
         '-maxrate', bitrate,
         '-bufsize', f"{int(bitrate[:-1]) * 2}M",

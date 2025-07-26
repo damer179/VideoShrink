@@ -1,1 +1,1 @@
-web: python app.py
+web: gunicorn --workers=2 --threads=4 --timeout=300 --max-requests=100 --preload app:app
