@@ -149,12 +149,15 @@ def compress_video_background(job_id, input_path, output_path, bitrate):
         # Start compression with real-time progress
         compress_with_realtime_progress(job_id, input_path, output_path, bitrate)
         
+        print(f"Compression completed for job {job_id}")
         compression_status[job_id]['status'] = 'completed'
         compression_status[job_id]['progress'] = 100
         compression_status[job_id]['message'] = 'Compression completed!'
         compression_status[job_id]['download_path'] = output_path
+        print(f"Job {job_id} marked as completed, file at: {output_path}")
         
     except Exception as e:
+        print(f"Compression error for job {job_id}: {str(e)}")
         compression_status[job_id]['status'] = 'error'
         compression_status[job_id]['message'] = f'Error: {str(e)}'
         
@@ -282,8 +285,18 @@ def get_status(job_id):
 
 @app.route('/download/<job_id>')
 def download_file(job_id):
-    if job_id not in compression_status or compression_status[job_id]['status'] != 'completed':
-        return jsonify({'error': 'File not ready'}), 404
+    print(f"Download request for job_id: {job_id}")
+    
+    if job_id not in compression_status:
+        print(f"Job {job_id} not found in compression_status")
+        return jsonify({'error': 'Job not found'}), 404
+    
+    job_status = compression_status[job_id]['status']
+    print(f"Job {job_id} status: {job_status}")
+    
+    if job_status != 'completed':
+        print(f"Job {job_id} not completed, current status: {job_status}")
+        return jsonify({'error': f'File not ready - Status: {job_status}'}), 404
     
     file_path = compression_status[job_id]['download_path']
     if not os.path.exists(file_path):
