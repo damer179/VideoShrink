@@ -68,8 +68,9 @@ def upload_file():
         if file.filename == '':
             return jsonify({'error': 'No file selected'}), 400
         
-        if not file.filename.lower().endswith('.mp4'):
-            return jsonify({'error': 'Only MP4 files are supported'}), 400
+        allowed_extensions = ['.mp4', '.mov']
+        if not any(file.filename.lower().endswith(ext) for ext in allowed_extensions):
+            return jsonify({'error': 'Only MP4 and MOV files are supported'}), 400
         
         print(f"Processing file: {file.filename}")
         

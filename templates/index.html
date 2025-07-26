@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="google-adsense-account" content="ca-pub-7375640157012522">
     <link rel="icon" type="image/svg+xml" href="/static/favicon.svg">
-    <title>Free MP4 Compressor for YouTube</title>
+    <title>Free Video Compressor for YouTube - MP4 & MOV</title>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         
@@ -473,7 +473,7 @@
 <body>
     <div class="container">
         <div class="header">
-            <h1>Free MP4 Compressor</h1>
+            <h1>Free Video Compressor</h1>
             <p>Compress your videos for YouTube with high quality and optimal settings</p>
         </div>
         
@@ -509,9 +509,9 @@
             <form id="compressionForm" enctype="multipart/form-data">
                 <div class="upload-area" id="uploadArea">
                     <div class="upload-icon">📁</div>
-                    <h3>Drop your MP4 file here or click to browse</h3>
-                    <p>Maximum file size: 500MB</p>
-                    <input type="file" id="videoFile" name="video" accept=".mp4" style="display: none;">
+                    <h3>Drop your video file here or click to browse</h3>
+                    <p>Supported formats: MP4, MOV | Maximum file size: 500MB</p>
+                    <input type="file" id="videoFile" name="video" accept=".mp4,.mov" style="display: none;">
                 </div>
                 
                 <div class="form-group">
@@ -697,7 +697,7 @@
             e.preventDefault();
             
             if (!fileInput.files[0]) {
-                alert('Please select a video file');
+                alert('Please select a video file (MP4 or MOV)');
                 return;
             }
             
@@ -819,8 +819,8 @@
             
             uploadArea.innerHTML = `
                 <div class="upload-icon">📁</div>
-                <h3>Drop your MP4 file here or click to browse</h3>
-                <p>Maximum file size: 500MB</p>
+                <h3>Drop your video file here or click to browse</h3>
+                <p>Supported formats: MP4, MOV | Maximum file size: 500MB</p>
             `;
         }
         
